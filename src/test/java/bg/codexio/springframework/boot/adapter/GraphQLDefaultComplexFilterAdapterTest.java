@@ -1,6 +1,5 @@
-package adapter;
+package bg.codexio.springframework.boot.adapter;
 
-import bg.codexio.springframework.boot.adapters.GraphQLDefaultComplexFilterAdapter;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterGroupRequest;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;

@@ -1,4 +1,4 @@
-package bg.codexio.springframework.boot.adapters;
+package bg.codexio.springframework.boot.adapter;
 
 import bg.codexio.springframework.data.jpa.requery.payload.FilterGroupRequest;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;

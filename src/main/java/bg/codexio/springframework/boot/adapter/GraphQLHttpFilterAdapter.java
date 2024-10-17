@@ -1,5 +1,6 @@
-package bg.codexio.springframework.boot.adapters;
+package bg.codexio.springframework.boot.adapter;
 
+import bg.codexio.springframework.boot.configuration.SupportsProperties;
 import bg.codexio.springframework.data.jpa.requery.adapter.HttpFilterAdapter;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterOperation;
 import bg.codexio.springframework.data.jpa.requery.payload.FilterRequest;
@@ -12,9 +13,16 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A filter adapter that handles GraphQL requests and translates filter
@@ -90,6 +98,7 @@ public class GraphQLHttpFilterAdapter
             LoggerFactory.getLogger(GraphQLHttpFilterAdapter.class);
     private final ObjectMapper objectMapper;
     private final GraphQLComplexFilterAdapter graphQLComplexFilterAdapter;
+    private final SupportsProperties supportsProperties;
 
 
     /**
@@ -103,10 +112,12 @@ public class GraphQLHttpFilterAdapter
      */
     public GraphQLHttpFilterAdapter(
             ObjectMapper objectMapper,
-            GraphQLComplexFilterAdapter graphQLComplexFilterAdapter
+            GraphQLComplexFilterAdapter graphQLComplexFilterAdapter,
+            SupportsProperties supportsProperties
     ) {
         this.objectMapper = objectMapper;
         this.graphQLComplexFilterAdapter = graphQLComplexFilterAdapter;
+        this.supportsProperties = supportsProperties;
     }
 
     /**
@@ -124,9 +135,37 @@ public class GraphQLHttpFilterAdapter
      */
     @Override
     public boolean supports(HttpServletRequest req) {
+        var checks = Stream.of(
+                checkUrl(req),
+                this.supportsProperties.isCheckBody() && checkRequestBody(req)
+        );
+
+        return this.supportsProperties.isInclusive()
+               ? checks.allMatch(Boolean::booleanValue)
+               : checks.anyMatch(Boolean::booleanValue);
+    }
+
+    private boolean checkUrl(HttpServletRequest req) {
         return req.getRequestURL()
                   .toString()
-                  .contains("/graphql");
+                  .matches(this.supportsProperties.getUrlPattern());
+    }
+
+    private boolean checkRequestBody(HttpServletRequest req) {
+        System.out.println("checking request body");
+
+        try {
+            return createJsonMap(req).get("query") != null;
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            this.logger.error(
+                    e.getMessage(),
+                    e
+            );
+
+            return false;
+        }
+
     }
 
     /**
@@ -171,6 +210,8 @@ public class GraphQLHttpFilterAdapter
 
             return new FilterRequestWrapper<>(parseGraphQLQuery(query));
         } catch (Exception e) {
+            System.out.println(e.getMessage());
+
             this.logger.error(
                     e.getMessage(),
                     e
@@ -189,17 +230,8 @@ public class GraphQLHttpFilterAdapter
      */
     private <T> FilterRequestWrapper<T> processPostRequest(HttpServletRequest request) {
         try {
-            var requestBody = new StringBuilder();
-            var reader = request.getReader();
-            String line;
-            while ((line = reader.readLine()) != null) {
-                requestBody.append(line);
-            }
-
-            var jsonMap = this.objectMapper.readValue(
-                    requestBody.toString(),
-                    new TypeReference<Map<String, Object>>() {}
-            );
+            System.out.println("processing post request");
+            var jsonMap = createJsonMap(request);
 
             var query = (String) jsonMap.get("query");
             var extractedFilter = extractFilterBody(query);
@@ -209,6 +241,8 @@ public class GraphQLHttpFilterAdapter
 
             return new FilterRequestWrapper<>(parseGraphQLQuery(query));
         } catch (Exception e) {
+            System.out.println(e.getMessage());
+
             this.logger.error(
                     e.getMessage(),
                     e
@@ -216,6 +250,29 @@ public class GraphQLHttpFilterAdapter
 
             return new FilterRequestWrapper<>();
         }
+    }
+
+    private Map<String, Object> createJsonMap(HttpServletRequest request)
+            throws IOException {
+        var requestWrapper = (ContentCachingRequestWrapper) request;
+
+        if (requestWrapper.getContentAsString()
+                          .isEmpty()) {
+            System.out.println("empty");
+            return this.objectMapper.readValue(
+                    request.getReader()
+                           .lines()
+                           .collect(Collectors.joining(System.lineSeparator())),
+                    new TypeReference<>() {}
+            );
+        }
+        System.out.println("not empty");
+        System.out.println(requestWrapper.getContentAsString());
+
+        return this.objectMapper.readValue(
+                requestWrapper.getContentAsString(),
+                new TypeReference<>() {}
+        );
     }
 
     /**
@@ -365,14 +422,12 @@ public class GraphQLHttpFilterAdapter
      * @return a map of field names to their corresponding values
      */
     private Map<String, Object> handleComplexObject(ObjectValue value) {
-        var result = new HashMap<String, Object>();
-        for (var field : value.getObjectFields()) {
-            result.put(
-                    field.getName(),
-                    field.getValue()
-            );
-        }
-        return result;
+        return value.getObjectFields()
+                    .stream()
+                    .collect(Collectors.toMap(
+                            ObjectField::getName,
+                            ObjectField::getValue
+                    ));
     }
 
     /**
@@ -406,6 +461,7 @@ public class GraphQLHttpFilterAdapter
      */
     private Optional<String> extractFilterBody(String query) {
         // Use regex to extract the contents of the filter argument
+        System.out.println("extracting filter body");
         var pattern = Pattern.compile(
                 "filter\\s*:\\s*(\\{.*\\})",
                 Pattern.DOTALL

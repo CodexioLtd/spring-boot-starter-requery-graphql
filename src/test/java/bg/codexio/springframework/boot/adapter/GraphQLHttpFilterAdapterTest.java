@@ -1,7 +1,6 @@
-package adapter;
+package bg.codexio.springframework.boot.adapter;
 
-import bg.codexio.springframework.boot.adapters.GraphQLComplexFilterAdapter;
-import bg.codexio.springframework.boot.adapters.GraphQLHttpFilterAdapter;
+import bg.codexio.springframework.boot.configuration.SupportsProperties;
 import bg.codexio.springframework.data.jpa.requery.payload.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -9,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.io.BufferedReader;
 import java.io.StringReader;
@@ -26,6 +26,8 @@ class GraphQLHttpFilterAdapterTest {
     private GraphQLComplexFilterAdapter graphQLComplexFilterAdapter;
     private GraphQLHttpFilterAdapter adapter;
     private HttpServletRequest request;
+    private ContentCachingRequestWrapper requestWrapper;
+    private SupportsProperties supportsProperties;
 
     private static FilterRequestWrapper<?> getMockSimpleFilterRequestWrapper() {
         var nameFilterRequest = new FilterRequest(
@@ -107,19 +109,27 @@ class GraphQLHttpFilterAdapterTest {
     @BeforeEach
     void setUp() {
         this.objectMapper = mock(ObjectMapper.class);
+        this.supportsProperties = mock(SupportsProperties.class);
         this.graphQLComplexFilterAdapter =
                 mock(GraphQLComplexFilterAdapter.class);
         this.adapter = new GraphQLHttpFilterAdapter(
                 this.objectMapper,
-                this.graphQLComplexFilterAdapter
+                this.graphQLComplexFilterAdapter,
+                this.supportsProperties
         );
         this.request = mock(HttpServletRequest.class);
+        this.requestWrapper = mock(ContentCachingRequestWrapper.class);
     }
 
     @Test
     void testSupportsReturnsTrue() {
+        //TODO: Create more tests covering all possible scenarios
         var mockRequest = mock(HttpServletRequest.class);
-        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer("http://localhost/graphql"));
+        when(supportsProperties.getUrlPattern()).thenReturn(".*\\/graphql.*");
+        when(this.supportsProperties.isInclusive()).thenReturn(false);
+        when(this.supportsProperties.isCheckBody()).thenReturn(false);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/graphql"));
+        when(mockRequest.getQueryString()).thenReturn(("test string"));
 
         var result = this.adapter.supports(mockRequest);
 
@@ -221,8 +231,8 @@ class GraphQLHttpFilterAdapterTest {
                         + "}}}}}) { id firstName lastName address { id city }"
                         + " } \"" + "}";
 
-        when(this.request.getMethod()).thenReturn("POST");
-        when(this.request.getReader()).thenReturn(new BufferedReader(new StringReader(requestBody)));
+        when(this.requestWrapper.getMethod()).thenReturn("POST");
+        when(this.requestWrapper.getContentAsString()).thenReturn(requestBody);
 
         var jsonMap = new HashMap<String, Object>();
         jsonMap.put(
@@ -254,7 +264,7 @@ class GraphQLHttpFilterAdapterTest {
 
         when(this.graphQLComplexFilterAdapter.adapt(anyString())).thenReturn(expectedWrapper);
 
-        var result = this.adapter.adapt(this.request);
+        var result = this.adapter.adapt(requestWrapper);
 
         assertEquals(
                 expectedWrapper,
@@ -268,29 +278,33 @@ class GraphQLHttpFilterAdapterTest {
                 + "{ zip_in: [\\\"10001\\\"] }) { id name friends { id city }"
                 + " } }\"}";
 
-        when(this.request.getMethod()).thenReturn("POST");
-        when(this.request.getReader()).thenReturn(new BufferedReader(new StringReader(requestBody)));
+        when(this.requestWrapper.getMethod()).thenReturn("POST");
+        when(this.requestWrapper.getContentAsString()).thenReturn(requestBody);
 
+        // Step 5: Simulate object mapper behavior
         var jsonMap = Map.of(
                 "query",
                 "{ user(name: \"John\", address: { zip_in: [\"10001\"] }) { "
                         + "id name friends { id city } } }"
         );
 
+        // Mock ObjectMapper behavior
         when(this.objectMapper.readValue(
                 eq(requestBody),
                 any(TypeReference.class)
         )).thenReturn(jsonMap);
 
+        // Step 6: Call the adapter with the wrapped request
         var expectedWrapper = getMockSimpleFilterRequestWrapper();
+        var result = this.adapter.adapt(requestWrapper);
 
-        var result = this.adapter.adapt(this.request);
-
+        // Step 7: Assert that the result matches expected
         assertEquals(
                 expectedWrapper,
                 result
         );
     }
+
 
     @Test
     void testAdaptGetRequestWithInvalidQuery() {
