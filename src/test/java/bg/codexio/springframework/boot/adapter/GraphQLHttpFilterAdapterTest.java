@@ -11,17 +11,24 @@ import org.junit.jupiter.api.Test;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class GraphQLHttpFilterAdapterTest {
 
+    public static final String URL_PATTERN = ".*\\/graphql.*";
+    public static final String CORRECT_URL = "http://localhost/api/graphql";
+    public static final String REST_URL = "http://localhost/api/rest";
+    public static final String VALID_QUERY_JSON_CONTENT = "{\"query\":\"test"
+            + "\"}";
+    public static final String INVALID_QUERY_JSON_CONTENT = "{\"invalidQuery"
+            + "\":\"test\"}";
     private ObjectMapper objectMapper;
     private GraphQLComplexFilterAdapter graphQLComplexFilterAdapter;
     private GraphQLHttpFilterAdapter adapter;
@@ -122,19 +129,241 @@ class GraphQLHttpFilterAdapterTest {
     }
 
     @Test
-    void testSupportsReturnsTrue() {
-        //TODO: Create more tests covering all possible scenarios
+    void testSupports_CheckBodyFalse_InclusiveFalse_ValidUrl() {
         var mockRequest = mock(HttpServletRequest.class);
-        when(supportsProperties.getUrlPattern()).thenReturn(".*\\/graphql.*");
-        when(this.supportsProperties.isInclusive()).thenReturn(false);
-        when(this.supportsProperties.isCheckBody()).thenReturn(false);
-        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/graphql"));
-        when(mockRequest.getQueryString()).thenReturn(("test string"));
+        when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
+        when(supportsProperties.isInclusive()).thenReturn(false);
+        when(supportsProperties.shouldCheckBody()).thenReturn(false);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(CORRECT_URL));
 
         var result = this.adapter.supports(mockRequest);
 
         assertTrue(result);
     }
+
+    @Test
+    void testSupports_CheckBodyFalse_InclusiveFalse_InvalidUrl() {
+        var mockRequest = mock(HttpServletRequest.class);
+        when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
+        when(supportsProperties.isInclusive()).thenReturn(false);
+        when(supportsProperties.shouldCheckBody()).thenReturn(false);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(REST_URL));
+
+        var result = this.adapter.supports(mockRequest);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testSupports_CheckBodyTrue_InclusiveFalse_ValidUrl_ValidBody()
+            throws IOException {
+        var mockRequest = mock(ContentCachingRequestWrapper.class);
+        when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
+        when(supportsProperties.isInclusive()).thenReturn(false);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(CORRECT_URL));
+
+        var jsonContent = VALID_QUERY_JSON_CONTENT;
+        var jsonMap = Map.of(
+                "query",
+                "test"
+        );
+        when(mockRequest.getContentAsString()).thenReturn(jsonContent);
+
+        when(this.objectMapper.readValue(
+                anyString(),
+                any(TypeReference.class)
+        )).thenReturn(jsonMap);
+
+        var result = this.adapter.supports(mockRequest);
+
+        assertTrue(result);
+    }
+
+
+    @Test
+    void testSupports_CheckBodyTrue_InclusiveFalse_ValidUrl_InvalidBody()
+            throws IOException {
+        var mockRequest = mock(ContentCachingRequestWrapper.class);
+        when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
+        when(supportsProperties.isInclusive()).thenReturn(false);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(CORRECT_URL));
+
+        var jsonContent = INVALID_QUERY_JSON_CONTENT;
+        var jsonMap = Map.of(
+                "invalidQuery",
+                "test"
+        );
+        when(mockRequest.getContentAsString()).thenReturn(jsonContent);
+
+        when(this.objectMapper.readValue(
+                anyString(),
+                any(TypeReference.class)
+        )).thenReturn(jsonMap);
+
+        var result = this.adapter.supports(mockRequest);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testSupports_CheckBodyTrue_InclusiveFalse_InvalidUrl_ValidBody()
+            throws IOException {
+        var mockRequest = mock(ContentCachingRequestWrapper.class);
+        when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
+        when(supportsProperties.isInclusive()).thenReturn(false);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(REST_URL));
+
+        var jsonContent = VALID_QUERY_JSON_CONTENT;
+        var jsonMap = Map.of(
+                "query",
+                "test"
+        );
+        when(mockRequest.getContentAsString()).thenReturn(jsonContent);
+
+        // Mock the ObjectMapper to return a map with the "query" key
+        when(this.objectMapper.readValue(
+                anyString(),
+                any(TypeReference.class)
+        )).thenReturn(jsonMap);
+
+        var result = this.adapter.supports(mockRequest);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testSupports_CheckBodyTrue_InclusiveFalse_InvalidUrl_InvalidBody()
+            throws IOException {
+        var mockRequest = mock(ContentCachingRequestWrapper.class);
+        when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
+        when(supportsProperties.isInclusive()).thenReturn(false);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(REST_URL));
+
+        var jsonContent = INVALID_QUERY_JSON_CONTENT;
+        var jsonMap = Map.of(
+                "invalidQuery",
+                "test"
+        );
+        when(mockRequest.getContentAsString()).thenReturn(jsonContent);
+
+        when(this.objectMapper.readValue(
+                anyString(),
+                any(TypeReference.class)
+        )).thenReturn(jsonMap);
+
+        var result = this.adapter.supports(mockRequest);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testSupports_CheckBodyTrue_InclusiveTrue_ValidUrl_ValidBody()
+            throws IOException {
+        var mockRequest = mock(ContentCachingRequestWrapper.class);
+        when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
+        when(supportsProperties.isInclusive()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(CORRECT_URL));
+
+        var jsonContent = VALID_QUERY_JSON_CONTENT;
+        var jsonMap = Map.of(
+                "query",
+                "test"
+        );
+        when(mockRequest.getContentAsString()).thenReturn(jsonContent);
+
+        when(this.objectMapper.readValue(
+                anyString(),
+                any(TypeReference.class)
+        )).thenReturn(jsonMap);
+
+        var result = this.adapter.supports(mockRequest);
+
+        assertTrue(result);
+    }
+
+    @Test
+    void testSupports_CheckBodyTrue_InclusiveTrue_ValidUrl_InvalidBody()
+            throws IOException {
+        var mockRequest = mock(ContentCachingRequestWrapper.class);
+        when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
+        when(supportsProperties.isInclusive()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(CORRECT_URL));
+
+        var jsonContent = INVALID_QUERY_JSON_CONTENT;
+        var jsonMap = Map.of(
+                "invalidQuery",
+                "test"
+        );
+        when(mockRequest.getContentAsString()).thenReturn(jsonContent);
+
+        when(this.objectMapper.readValue(
+                anyString(),
+                any(TypeReference.class)
+        )).thenReturn(jsonMap);
+
+        var result = this.adapter.supports(mockRequest);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testSupports_CheckBodyTrue_InclusiveTrue_InvalidUrl_ValidBody()
+            throws IOException {
+        var mockRequest = mock(ContentCachingRequestWrapper.class);
+        when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
+        when(supportsProperties.isInclusive()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(REST_URL));
+
+        var jsonContent = VALID_QUERY_JSON_CONTENT;
+        var jsonMap = Map.of(
+                "query",
+                "test"
+        );
+        when(mockRequest.getContentAsString()).thenReturn(jsonContent);
+
+        when(this.objectMapper.readValue(
+                anyString(),
+                any(TypeReference.class)
+        )).thenReturn(jsonMap);
+
+        var result = this.adapter.supports(mockRequest);
+
+        assertFalse(result);
+    }
+
+    @Test
+    void testSupports_CheckBodyTrue_InclusiveTrue_InvalidUrl_InvalidBody()
+            throws IOException {
+        var mockRequest = mock(ContentCachingRequestWrapper.class);
+        when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
+        when(supportsProperties.isInclusive()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
+        when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(REST_URL));
+
+        var jsonContent = INVALID_QUERY_JSON_CONTENT;
+        var jsonMap = Map.of(
+                "invalidQuery",
+                "test"
+        );
+        when(mockRequest.getContentAsString()).thenReturn(jsonContent);
+
+        when(this.objectMapper.readValue(
+                anyString(),
+                any(TypeReference.class)
+        )).thenReturn(jsonMap);
+
+        var result = this.adapter.supports(mockRequest);
+
+        assertFalse(result);
+    }
+
 
     @Test
     void testAdaptOtherHttpMethod() {

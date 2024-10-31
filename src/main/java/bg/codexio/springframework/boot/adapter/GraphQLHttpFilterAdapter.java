@@ -137,7 +137,8 @@ public class GraphQLHttpFilterAdapter
     public boolean supports(HttpServletRequest req) {
         var checks = Stream.of(
                 checkUrl(req),
-                this.supportsProperties.isCheckBody() && checkRequestBody(req)
+                this.supportsProperties.shouldCheckBody()
+                        && checkRequestBody(req)
         );
 
         return this.supportsProperties.isInclusive()
@@ -152,12 +153,9 @@ public class GraphQLHttpFilterAdapter
     }
 
     private boolean checkRequestBody(HttpServletRequest req) {
-        System.out.println("checking request body");
-
         try {
             return createJsonMap(req).get("query") != null;
         } catch (IOException e) {
-            System.out.println(e.getMessage());
             this.logger.error(
                     e.getMessage(),
                     e
@@ -210,8 +208,6 @@ public class GraphQLHttpFilterAdapter
 
             return new FilterRequestWrapper<>(parseGraphQLQuery(query));
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-
             this.logger.error(
                     e.getMessage(),
                     e
@@ -230,7 +226,6 @@ public class GraphQLHttpFilterAdapter
      */
     private <T> FilterRequestWrapper<T> processPostRequest(HttpServletRequest request) {
         try {
-            System.out.println("processing post request");
             var jsonMap = createJsonMap(request);
 
             var query = (String) jsonMap.get("query");
@@ -241,8 +236,6 @@ public class GraphQLHttpFilterAdapter
 
             return new FilterRequestWrapper<>(parseGraphQLQuery(query));
         } catch (Exception e) {
-            System.out.println(e.getMessage());
-
             this.logger.error(
                     e.getMessage(),
                     e
@@ -258,7 +251,6 @@ public class GraphQLHttpFilterAdapter
 
         if (requestWrapper.getContentAsString()
                           .isEmpty()) {
-            System.out.println("empty");
             return this.objectMapper.readValue(
                     request.getReader()
                            .lines()
@@ -266,8 +258,6 @@ public class GraphQLHttpFilterAdapter
                     new TypeReference<>() {}
             );
         }
-        System.out.println("not empty");
-        System.out.println(requestWrapper.getContentAsString());
 
         return this.objectMapper.readValue(
                 requestWrapper.getContentAsString(),
@@ -461,7 +451,6 @@ public class GraphQLHttpFilterAdapter
      */
     private Optional<String> extractFilterBody(String query) {
         // Use regex to extract the contents of the filter argument
-        System.out.println("extracting filter body");
         var pattern = Pattern.compile(
                 "filter\\s*:\\s*(\\{.*\\})",
                 Pattern.DOTALL
