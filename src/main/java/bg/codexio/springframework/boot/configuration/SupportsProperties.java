@@ -4,16 +4,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "codexio.requery.adapters.graphql.supports")
 public class SupportsProperties {
-    private boolean shouldCheckBody;
+    private boolean checkBody;
     private boolean inclusive;
     private String urlPattern;
 
-    public boolean shouldCheckBody() {
-        return shouldCheckBody;
+    public boolean isCheckBody() {
+        return checkBody;
     }
 
-    public void setShouldCheckBody(boolean shouldCheckBody) {
-        this.shouldCheckBody = shouldCheckBody;
+    public void setCheckBody(boolean shouldCheckBody) {
+        this.checkBody = shouldCheckBody;
     }
 
     public String getUrlPattern() {

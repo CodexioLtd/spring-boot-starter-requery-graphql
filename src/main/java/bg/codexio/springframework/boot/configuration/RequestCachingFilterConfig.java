@@ -8,11 +8,29 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration class for registering a {@link RequestCachingFilter} bean,
+ * which caches the HTTP request body to enable multiple reads of the body.
+ *
+ * <p>
+ * The {@link RequestCachingFilter} is conditionally registered based on the
+ * property {@code codexio.requery.adapters.graphql.supports.check-body} being
+ * set to {@code true}. This filter is applied to all URL patterns (/*).
+ * </p>
+ */
 @Configuration
 public class RequestCachingFilterConfig {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
+    /**
+     * Registers the {@link RequestCachingFilter} to cache the request body,
+     * conditionally enabled by the property
+     * {@code codexio.requery.adapters.graphql.supports.check-body}.
+     *
+     * @return a {@link FilterRegistrationBean} for the
+     * {@link RequestCachingFilter}
+     */
     @Bean
     @ConditionalOnProperty(
             prefix = "codexio.requery.adapters.graphql.supports",

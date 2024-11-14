@@ -11,6 +11,16 @@ import org.springframework.stereotype.Component;
 /**
  * Default implementation of {@link GraphQLComplexFilterAdapter} for adapting
  * complex filters from a JSON string to a {@link FilterRequestWrapper}.
+ *
+ * <p>
+ * This adapter deserializes JSON representations of complex GraphQL filters
+ * into
+ * {@link FilterGroupRequest} objects, which are then wrapped in a
+ * {@link FilterRequestWrapper}.
+ * It enables advanced filtering capabilities within GraphQL queries by
+ * supporting
+ * structured filter criteria defined in JSON.
+ * </p>
  */
 @Component
 @ConditionalOnMissingBean(GraphQLComplexFilterAdapter.class)
@@ -20,25 +30,33 @@ public class GraphQLDefaultComplexFilterAdapter
 
     /**
      * Constructor for {@code GraphQLDefaultComplexFilterAdapter} that
-     * injects an {@link ObjectMapper}.
+     * injects an {@link ObjectMapper} for JSON processing.
      *
      * @param objectMapper the {@link ObjectMapper} to be used for JSON
-     *                     processing
+     *                     deserialization
      */
     public GraphQLDefaultComplexFilterAdapter(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
+    //currently unusable since it is the only GraphQLComplexFilter adapter
     @Override
     public boolean supports(HttpServletRequest req) {
-        //fix later
         return true;
     }
 
     /**
      * Adapts a JSON string representing a complex filter into a
      * {@link FilterRequestWrapper}.
-     * It deserializes the JSON into a {@link FilterGroupRequest} object.
+     *
+     * <p>
+     * This method deserializes the provided JSON string into a
+     * {@link FilterGroupRequest} object, which represents the structure and
+     * conditions of a complex filter within a GraphQL query. The result is
+     * wrapped in a {@link FilterRequestWrapper} to facilitate further
+     * processing
+     * as a filter criterion.
+     * </p>
      *
      * @param complexFilterJson the JSON string containing the complex filter
      *                          definition
