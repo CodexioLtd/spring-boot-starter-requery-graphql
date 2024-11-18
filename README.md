@@ -164,7 +164,7 @@ is not achieved.
 
 Currently, the filtration of the fields (if they are Collections) is not supported.
 
-### Complex filter object is not purely GraphQL
+### *Complex filter object is not purely GraphQL*
 
 The complex filtration request object is just a typical one for the normal Requery library supported objects. Currently
 complex filtration similar to the simple one is not possible.
