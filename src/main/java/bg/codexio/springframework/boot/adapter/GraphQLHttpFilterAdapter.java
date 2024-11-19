@@ -435,7 +435,7 @@ public class GraphQLHttpFilterAdapter
         if (requestWrapper.getContentAsString()
                           .isEmpty()) {
             return this.objectMapper.readValue(
-                    request.getReader()
+                    requestWrapper.getReader()
                            .lines()
                            .collect(Collectors.joining(System.lineSeparator())),
                     new TypeReference<>() {}
