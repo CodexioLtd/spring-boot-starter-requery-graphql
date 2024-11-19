@@ -133,7 +133,7 @@ class GraphQLHttpFilterAdapterTest {
         var mockRequest = mock(HttpServletRequest.class);
         when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
         when(supportsProperties.isInclusive()).thenReturn(false);
-        when(supportsProperties.isCheckBody()).thenReturn(false);
+        when(supportsProperties.shouldCheckBody()).thenReturn(false);
         when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(CORRECT_URL));
 
         var result = this.adapter.supports(mockRequest);
@@ -146,7 +146,7 @@ class GraphQLHttpFilterAdapterTest {
         var mockRequest = mock(HttpServletRequest.class);
         when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
         when(supportsProperties.isInclusive()).thenReturn(false);
-        when(supportsProperties.isCheckBody()).thenReturn(false);
+        when(supportsProperties.shouldCheckBody()).thenReturn(false);
         when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(REST_URL));
 
         var result = this.adapter.supports(mockRequest);
@@ -160,7 +160,7 @@ class GraphQLHttpFilterAdapterTest {
         var mockRequest = mock(ContentCachingRequestWrapper.class);
         when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
         when(supportsProperties.isInclusive()).thenReturn(false);
-        when(supportsProperties.isCheckBody()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
         when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(CORRECT_URL));
 
         var jsonContent = VALID_QUERY_JSON_CONTENT;
@@ -187,7 +187,7 @@ class GraphQLHttpFilterAdapterTest {
         var mockRequest = mock(ContentCachingRequestWrapper.class);
         when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
         when(supportsProperties.isInclusive()).thenReturn(false);
-        when(supportsProperties.isCheckBody()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
         when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(CORRECT_URL));
 
         var jsonContent = INVALID_QUERY_JSON_CONTENT;
@@ -213,7 +213,7 @@ class GraphQLHttpFilterAdapterTest {
         var mockRequest = mock(ContentCachingRequestWrapper.class);
         when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
         when(supportsProperties.isInclusive()).thenReturn(false);
-        when(supportsProperties.isCheckBody()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
         when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(REST_URL));
 
         var jsonContent = VALID_QUERY_JSON_CONTENT;
@@ -240,7 +240,7 @@ class GraphQLHttpFilterAdapterTest {
         var mockRequest = mock(ContentCachingRequestWrapper.class);
         when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
         when(supportsProperties.isInclusive()).thenReturn(false);
-        when(supportsProperties.isCheckBody()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
         when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(REST_URL));
 
         var jsonContent = INVALID_QUERY_JSON_CONTENT;
@@ -266,7 +266,7 @@ class GraphQLHttpFilterAdapterTest {
         var mockRequest = mock(ContentCachingRequestWrapper.class);
         when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
         when(supportsProperties.isInclusive()).thenReturn(true);
-        when(supportsProperties.isCheckBody()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
         when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(CORRECT_URL));
 
         var jsonContent = VALID_QUERY_JSON_CONTENT;
@@ -292,7 +292,7 @@ class GraphQLHttpFilterAdapterTest {
         var mockRequest = mock(ContentCachingRequestWrapper.class);
         when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
         when(supportsProperties.isInclusive()).thenReturn(true);
-        when(supportsProperties.isCheckBody()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
         when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(CORRECT_URL));
 
         var jsonContent = INVALID_QUERY_JSON_CONTENT;
@@ -318,7 +318,7 @@ class GraphQLHttpFilterAdapterTest {
         var mockRequest = mock(ContentCachingRequestWrapper.class);
         when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
         when(supportsProperties.isInclusive()).thenReturn(true);
-        when(supportsProperties.isCheckBody()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
         when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(REST_URL));
 
         var jsonContent = VALID_QUERY_JSON_CONTENT;
@@ -344,7 +344,7 @@ class GraphQLHttpFilterAdapterTest {
         var mockRequest = mock(ContentCachingRequestWrapper.class);
         when(supportsProperties.getUrlPattern()).thenReturn(URL_PATTERN);
         when(supportsProperties.isInclusive()).thenReturn(true);
-        when(supportsProperties.isCheckBody()).thenReturn(true);
+        when(supportsProperties.shouldCheckBody()).thenReturn(true);
         when(mockRequest.getRequestURL()).thenReturn(new StringBuffer(REST_URL));
 
         var jsonContent = INVALID_QUERY_JSON_CONTENT;

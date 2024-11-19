@@ -1,6 +1,7 @@
 package bg.codexio.springframework.boot.adapter;
 
 import bg.codexio.springframework.data.jpa.requery.payload.FilterGroupRequest;
+import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,7 +9,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -56,17 +58,19 @@ class GraphQLDefaultComplexFilterAdapterTest {
     }
 
     @Test
-    void testAdaptInvalidJsonThrowsJsonProcessingException()
+    void testAdaptInvalidJsonReturnsEmptyFilterRequestWrapper()
             throws JsonProcessingException {
         var invalidJson = "invalid json";
+
         when(this.objectMapper.readValue(
                 invalidJson,
                 FilterGroupRequest.class
         )).thenThrow(new JsonParseException("Invalid JSON"));
 
-        assertThrows(
-                JsonProcessingException.class,
-                () -> this.adapter.adapt(invalidJson)
+        var result = this.adapter.adapt(invalidJson);
+        assertEquals(
+                new FilterRequestWrapper<>(),
+                result
         );
     }
 }

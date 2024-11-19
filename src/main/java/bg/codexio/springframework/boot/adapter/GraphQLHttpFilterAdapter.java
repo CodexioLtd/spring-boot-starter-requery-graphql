@@ -185,7 +185,7 @@ public class GraphQLHttpFilterAdapter
     public boolean supports(HttpServletRequest req) {
         var checks = Stream.of(
                 checkUrl(req),
-                this.supportsProperties.isCheckBody()
+                this.supportsProperties.shouldCheckBody()
                         && checkRequestBody(req)
         );
 
@@ -366,19 +366,13 @@ public class GraphQLHttpFilterAdapter
             String variables
     ) {
         try {
-            if (variables != null) {
-                query = substituteVariablesInQuery(
-                        query,
-                        createVariablesMap(variables)
-                );
-            }
+            var computedQuery = substituteVariablesInQuery(
+                    query,
+                    createVariablesMap(variables)
+            );
 
-            var extractedFilter = extractFilterBody(query);
-            if (extractedFilter.isPresent()) {
-                return this.graphQLComplexFilterAdapter.adapt(extractedFilter.get());
-            }
-
-            return new FilterRequestWrapper<>(parseGraphQLQuery(query));
+            return extractFilterBody(computedQuery).map(this.graphQLComplexFilterAdapter::<T>adapt)
+                                                   .orElseGet(() -> new FilterRequestWrapper<T>(parseGraphQLQuery(computedQuery)));
         } catch (Exception e) {
             this.logger.error(
                     e.getMessage(),
@@ -405,6 +399,9 @@ public class GraphQLHttpFilterAdapter
      */
     private Map<String, Object> createVariablesMap(String variables)
             throws JsonProcessingException {
+        if (variables == null) {
+            return new HashMap<>();
+        }
         return this.objectMapper.readValue(
                 variables,
                 HashMap.class

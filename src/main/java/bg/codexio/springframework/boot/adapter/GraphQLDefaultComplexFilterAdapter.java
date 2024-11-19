@@ -5,6 +5,8 @@ import bg.codexio.springframework.data.jpa.requery.payload.FilterRequestWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +28,7 @@ import org.springframework.stereotype.Component;
 @ConditionalOnMissingBean(GraphQLComplexFilterAdapter.class)
 public class GraphQLDefaultComplexFilterAdapter
         implements GraphQLComplexFilterAdapter {
+    private final Logger logger = LoggerFactory.getLogger(this.getClass());
     private final ObjectMapper objectMapper;
 
     /**
@@ -63,16 +66,22 @@ public class GraphQLDefaultComplexFilterAdapter
      * @param <T>               the type parameter for the filter's generic type
      * @return a {@link FilterRequestWrapper} containing the parsed
      * {@link FilterGroupRequest}
-     * @throws JsonProcessingException if there is an error during JSON parsing
      */
     @Override
-    public <T> FilterRequestWrapper<T> adapt(String complexFilterJson)
-            throws JsonProcessingException {
-        var filterGroupRequest = this.objectMapper.readValue(
-                complexFilterJson,
-                FilterGroupRequest.class
-        );
+    public <T> FilterRequestWrapper<T> adapt(String complexFilterJson) {
+        try {
+            var filterGroupRequest = this.objectMapper.readValue(
+                    complexFilterJson,
+                    FilterGroupRequest.class
+            );
 
-        return new FilterRequestWrapper<>(filterGroupRequest);
+            return new FilterRequestWrapper<>(filterGroupRequest);
+        } catch (JsonProcessingException e) {
+            this.logger.error(
+                    e.getMessage(),
+                    e
+            );
+            return new FilterRequestWrapper<>();
+        }
     }
 }

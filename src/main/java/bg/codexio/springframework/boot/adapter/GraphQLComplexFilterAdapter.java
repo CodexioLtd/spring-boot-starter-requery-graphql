@@ -39,6 +39,5 @@ public interface GraphQLComplexFilterAdapter {
      * {@link FilterGroupRequest}
      * @throws JsonProcessingException if there is an error during JSON parsing
      */
-    <T> FilterRequestWrapper<T> adapt(String complexFilterJson)
-            throws JsonProcessingException;
+    <T> FilterRequestWrapper<T> adapt(String complexFilterJson);
 }

@@ -8,12 +8,12 @@ public class SupportsProperties {
     private boolean inclusive;
     private String urlPattern;
 
-    public boolean isCheckBody() {
-        return checkBody;
+    public boolean shouldCheckBody() {
+        return this.checkBody;
     }
 
-    public void setCheckBody(boolean shouldCheckBody) {
-        this.checkBody = shouldCheckBody;
+    public void setCheckBody(boolean checkBody) {
+        this.checkBody = checkBody;
     }
 
     public String getUrlPattern() {
