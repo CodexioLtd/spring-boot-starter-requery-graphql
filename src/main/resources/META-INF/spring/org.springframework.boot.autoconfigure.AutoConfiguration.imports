@@ -1,0 +1,2 @@
+bg.codexio.springframework.boot.configuration.FilterGraphQLAutoConfiguration
+bg.codexio.springframework.boot.configuration.RequestCachingFilterConfig
