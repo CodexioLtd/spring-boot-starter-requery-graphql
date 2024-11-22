@@ -108,43 +108,86 @@ queries. These adapters parse JSON-based filter definitions embedded in GraphQL 
   optional and by setting them to `true` you will have a validation of you request body and if *inclusive* is set to
   true as well, both the url and the body have to be valid as well
 
+* `codexio.requery.adapters.active` is a property that could control which adapters are instantiated when the
+  application is started (*this includes custom adapters that implement the `HttpFilterAdapter` interface, if you want
+  to create one*). If it is not specified, all adapters implementing the `HttpFilterAdapter` will be instantiated and
+  traversed for their `supports` function.
+
 ### Example GraphQL Queries
 
 Below are examples of GraphQL queries that support filtering with and without variables. These queries use JSON-based
-filters, which are converted to JPA specifications to execute dynamic queries.
+filters, which are converted to JPA specifications to execute dynamic queries. Keep in mind that in order to specify the
+filter object for the GET HTTP Requests use ``filter=`` and for variables encoded value ``variables=``
+
+*\*Note*: For construction of the simple queries the convention is as follows nameOfField_operation.
+
+<br>
 
 #### Simple Query with Variables:
 
+The HTTP POST Request body:
 ```json
 {
-  "query": "query ($firstName: String!) {\n user(firstName: \"$firstName\", address: { zip_in: [\"10001\"] }) { id name friends { id city } } }",
-  "variables": "{\"$firstName\": \"John\"}"
+  "query": "{user(firstName: \"$firstName\", address: { zip_in: $zip }) { id name friends { id city } } }",
+  "variables" : "{\"$firstName\" : \"John\", \"$zip\":[\"10001\", \"77001\"]}"
 }
 ```
+
+The HTTP GET URL:
+
+```
+http://localhost:8080/users/graphql?query=%7B%0A%20user%28firstName%3A%20%22%24firstName%22%2C%20address%3A%20%7B%20zip_in%3A%20%24zip%20%7D%29%20%7B%20id%20name%20friends%20%7B%20id%20city%20%7D%20%7D%20%7D&variables=%7B%22%24firstName%22%20%3A%20%22John%22%2C%20%22%24zip%22%3A%5B%2210001%22%2C%20%2277001%22%5D%7D
+```
+
+<br>
 
 #### Simple Query without Variables:
 
+The HTTP POST Request body:
 ```json
 {
-  "query": "{ user(name: \"John\", address: { zip_in: [\"10001\"] }) { id name friends { id city } } }"
+  "query": "{ user(firstName: \"John\", address: { zip_in: [\"10001\"] }) { id name friends { id city } } }"
 }
 ```
+
+The HTTP GET URL:
+
+```
+http://localhost:8080/users/graphql?query=%7B%0A%20user%28firstName%3A%20%22John%22%2C%20address%3A%20%7B%20zip_in%3A%20%5B10001%2C%2077001%5D%20%7D%29%20%7B%20id%20name%20friends%20%7B%20id%20city%20%7D%20%7D%20%7D
+```
+
+<br>
 
 #### Complex Query with Variables:
 
+The HTTP POST Request body:
 ```json
 {
-  "query": "users(filter: {\"groupOperations\": [{\"field\": \"email\", \"operation\": \"CONTAINS\", \"value\": \"$emailContains\"}], \"nonPriorityGroupOperators\": [\"AND\"], \"rightSideOperands\": {\"unaryGroupOperator\": \"OR\", \"unaryGroup\": {\"groupOperations\": [{\"field\": \"firstName\", \"operation\": \"IN\", \"value\": [\"$firstName\"]}, {\"field\": \"lastName\", \"operation\": \"BEGINS_WITH_CASEINS\", \"value\": \"$lastName\"}], \"nonPriorityGroupOperators\": [\"OR\"], \"rightSideOperands\": {\"unaryGroupOperator\": \"AND\", \"unaryGroup\": {\"groupOperations\": [{\"field\": \"age\", \"operation\": \"GT\", \"value\": 25}], \"nonPriorityGroupOperators\": []}}}}}) { id firstName lastName address { id city } }",
-  "variables": "{\"$emailContains\": \"doe\", \"$lastName\": \"Doe\", \"$firstName\": [\"John\", \"Vasko\"]}"
+  "query": "users(filter: {\"groupOperations\": [{\"field\": \"email\", \"operation\": \"CONTAINS\", \"value\": \"$emailContains\"}], \"nonPriorityGroupOperators\": [\"AND\"], \"rightSideOperands\": {\"unaryGroupOperator\": \"AND\", \"unaryGroup\": {\"groupOperations\": [{\"field\": \"firstName\", \"operation\": \"IN\", \"value\": [\"$firstName\"]}, {\"field\": \"lastName\", \"operation\": \"NOT_EMPTY\", \"value\": \"$lastName\"}], \"nonPriorityGroupOperators\": [\"OR\"], \"rightSideOperands\": {\"unaryGroupOperator\": \"AND\", \"unaryGroup\": {\"groupOperations\": [{\"field\": \"age\", \"operation\": \"GTE\", \"value\": 25}], \"nonPriorityGroupOperators\": []}}}}}) { id firstName lastName address { id city } } ",
+  "variables" : "{\"$emailContains\":\"5@\", \"$lastName\":\"Doe\", \"$firstName\":[\"John\", \"David\"]}"
 }
 ```
+
+The HTTP GET URL:
+
+```
+http://localhost:8080/users/graphql?query=users%28filter%3A%20%7B%22groupOperations%22%3A%20%5B%7B%22field%22%3A%20%22email%22%2C%20%22operation%22%3A%20%22CONTAINS%22%2C%20%22value%22%3A%20%22%24emailContains%22%7D%5D%2C%20%22nonPriorityGroupOperators%22%3A%20%5B%22AND%22%5D%2C%20%22rightSideOperands%22%3A%20%7B%22unaryGroupOperator%22%3A%20%22AND%22%2C%20%22unaryGroup%22%3A%20%7B%22groupOperations%22%3A%20%5B%7B%22field%22%3A%20%22firstName%22%2C%20%22operation%22%3A%20%22IN%22%2C%20%22value%22%3A%20%5B%22%24firstName%22%5D%7D%2C%20%7B%22field%22%3A%20%22lastName%22%2C%20%22operation%22%3A%20%22NOT_EMPTY%22%2C%20%22value%22%3A%20%22%24lastName%22%7D%5D%2C%20%22nonPriorityGroupOperators%22%3A%20%5B%22OR%22%5D%2C%20%22rightSideOperands%22%3A%20%7B%22unaryGroupOperator%22%3A%20%22AND%22%2C%20%22unaryGroup%22%3A%20%7B%22groupOperations%22%3A%20%5B%7B%22field%22%3A%20%22age%22%2C%20%22operation%22%3A%20%22GTE%22%2C%20%22value%22%3A%2025%7D%5D%2C%20%22nonPriorityGroupOperators%22%3A%20%5B%5D%7D%7D%7D%7D%7D%29%20%7B%20id%20firstName%20lastName%20address%20%7B%20id%20city%20%7D%20%7D%20&variables=%7B%22%24emailContains%22%3A%225%40%22%2C%20%22%24lastName%22%3A%22Doe%22%2C%20%22%24firstName%22%3A%5B%22John%22%2C%20%22David%22%5D%7D
+```
+
+<br>
 
 #### Complex Query without Variables:
 
 ```json
 {
-  "query": "{ users(filter: { \"groupOperations\": [{ \"field\": \"email\", \"operation\": \"CONTAINS\", \"value\": \"example.com\" }], \"nonPriorityGroupOperators\": [\"AND\"], \"rightSideOperands\": { \"unaryGroupOperator\": \"OR\", \"unaryGroup\": { \"groupOperations\": [{ \"field\": \"firstName\", \"operation\": \"IN\", \"value\": [\"John\", \"Vasko\"] }, { \"field\": \"lastName\", \"operation\": \"BEGINS_WITH_CASEINS\", \"value\": \"Doe\" }], \"nonPriorityGroupOperators\": [\"OR\"], \"rightSideOperands\": { \"unaryGroupOperator\": \"AND\", \"unaryGroup\": { \"groupOperations\": [{ \"field\": \"age\", \"operation\": \"GT\", \"value\": 25 }], \"nonPriorityGroupOperators\": [] }}}}}) { id firstName lastName address { id city } } }"
+  "query": "users(filter: {\"groupOperations\": [{\"field\": \"email\", \"operation\": \"CONTAINS\", \"value\": \"5@\"}], \"nonPriorityGroupOperators\": [\"AND\"], \"rightSideOperands\": {\"unaryGroupOperator\": \"AND\", \"unaryGroup\": {\"groupOperations\": [{\"field\": \"firstName\", \"operation\": \"IN\", \"value\": [\"John\", \"David\"]}, {\"field\": \"lastName\", \"operation\": \"NOT_EMPTY\", \"value\": \"Doe\"}], \"nonPriorityGroupOperators\": [\"OR\"], \"rightSideOperands\": {\"unaryGroupOperator\": \"AND\", \"unaryGroup\": {\"groupOperations\": [{\"field\": \"age\", \"operation\": \"GTE\", \"value\": 25}], \"nonPriorityGroupOperators\": []}}}}}) { id firstName lastName address { id city } } "
 }
+```
+
+The HTTP GET URL:
+
+```
+http://localhost:8080/users/graphql?query=users%28filter%3A%20%7B%22groupOperations%22%3A%20%5B%7B%22field%22%3A%20%22email%22%2C%20%22operation%22%3A%20%22CONTAINS%22%2C%20%22value%22%3A%20%22%24emailContains%22%7D%5D%2C%20%22nonPriorityGroupOperators%22%3A%20%5B%22AND%22%5D%2C%20%22rightSideOperands%22%3A%20%7B%22unaryGroupOperator%22%3A%20%22AND%22%2C%20%22unaryGroup%22%3A%20%7B%22groupOperations%22%3A%20%5B%7B%22field%22%3A%20%22firstName%22%2C%20%22operation%22%3A%20%22IN%22%2C%20%22value%22%3A%20%5B%22%24firstName%22%5D%7D%2C%20%7B%22field%22%3A%20%22lastName%22%2C%20%22operation%22%3A%20%22NOT_EMPTY%22%2C%20%22value%22%3A%20%22%24lastName%22%7D%5D%2C%20%22nonPriorityGroupOperators%22%3A%20%5B%22OR%22%5D%2C%20%22rightSideOperands%22%3A%20%7B%22unaryGroupOperator%22%3A%20%22AND%22%2C%20%22unaryGroup%22%3A%20%7B%22groupOperations%22%3A%20%5B%7B%22field%22%3A%20%22age%22%2C%20%22operation%22%3A%20%22GTE%22%2C%20%22value%22%3A%2025%7D%5D%2C%20%22nonPriorityGroupOperators%22%3A%20%5B%5D%7D%7D%7D%7D%7D%29%20%7B%20id%20firstName%20lastName%20address%20%7B%20id%20city%20%7D%20%7D%20&variables=%7B%22%24emailContains%22%3A%225%40%22%2C%20%22%24lastName%22%3A%22Doe%22%2C%20%22%24firstName%22%3A%5B%22John%22%2C%20%22David%22%5D%7D
 ```
 
 These examples demonstrate the use of JSON-based filters within GraphQL queries, enabling advanced filtering
