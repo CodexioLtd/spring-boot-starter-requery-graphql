@@ -146,17 +146,15 @@ public class GraphQLHttpFilterAdapter
             Map<String, Object> variables
     ) {
         for (Map.Entry<String, Object> entry : variables.entrySet()) {
-            String variablePlaceholder = "\"" + entry.getKey() + "\"";
-            String value = "\"" + entry.getValue()
-                                       .toString() + "\"";
-
-            System.out.println("Replacing placeholder: " + variablePlaceholder
-                                       + " with value: " + value);
+            String variablePlaceholder = entry.getKey();
+            String value = entry.getValue()
+                                .toString();
             query = query.replace(
                     variablePlaceholder,
                     value
             );
         }
+
         return query;
     }
 
